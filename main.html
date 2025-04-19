@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="title">Fourier Drawing App</title>
+  <style>
+    :root {
+      /* 顏色變數 */
+      --bg-color: #0d1b2a;
+      --panel-color: #1b263b;
+      --accent-color: #00b4d8;
+      --text-color: #ffffff;
+      --btn-color: #415a77;
+      --btn-hover: #00b4d8;
+    }
+
+    /* 基礎 body 樣式 */
+    body {
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    /* 主容器樣式 */
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 2rem;
+      width: 100%;
+      max-width: 100vw;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* 主畫布容器樣式 */
+    .main-canvas-container {
+      flex: 1 1 auto;
+      max-width: min(90vw, 90vh);
+      aspect-ratio: 1 / 1;
+      position: relative;
+    }
+
+    #mainCanvas {
+      width: 100%;
+      height: 100%;
+      background-color: black;
+      touch-action: none;
+    }
+
+    /* 側邊欄樣式 */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 300px;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    /* 迷你畫布容器樣式 */
+    .mini-canvases {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .mini-canvases canvas {
+      width: 45%;
+      aspect-ratio: 1 / 1;
+      background-color: #000;
+    }
+
+    /* 按鈕樣式 */
+    button {
+      background-color: var(--btn-color);
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: var(--btn-hover);
+    }
+
+    /* 筆刷預覽樣式 */
+    .brush-preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-top: 0.5rem;
+      align-self: center;
+    }
+
+    /* 滑桿樣式 */
+    input[type="range"] {
+      width: 100%;
+      margin: 0.5rem 0;
+      background-color: #415a77;
+      border-radius: 8px;
+      height: 8px;
+      cursor: pointer;
+    }
+
+    /* 響應式佈局 (橫向模式) */
+    @media (orientation: landscape) {
+      .sidebar {
+        height: 100%;
+        max-height: min(90vw, 90vh);
+        overflow-y: auto;
+      }
+    }
+
+    /* 全螢幕畫布容器樣式 */
+    .fullscreen-canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+    }
+
+    .fullscreen-canvas-container.active {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .fullscreen-canvas {
+      width: min(90vw, 90vh);
+      height: min(90vw, 90vh);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      background-color: black;
+    }
+
+    /* 圖片控制容器樣式 */
+    #imageControlOriginal,
+    #imageControlMask {
+      display: flex;
+      gap: 5px;
+      justify-content: space-between;
+    }
+
+    #imageControlOriginal button,
+    #imageControlMask button {
+      width: calc(50% - 5px);
+    }
+  </style>
+  <script src="http://turbomaze.github.io/JS-Fourier-Image-Analysis/js/fourier.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="main-canvas-container">
+      <canvas width=512 height=512 id="mainCanvas"></canvas>
+    </div>
+    <div class="sidebar">
+      <div class="mini-canvases">
+        <canvas width=512 height=512 class="tap2show" id="originalCV"></canvas>
+        <canvas width=512 height=512 class="tap2show" id="fftCV"></canvas>
+        <canvas width=512 height=512 class="tap2show" id="maskCV"></canvas>
+        <canvas width=512 height=512 class="tap2show" id="resultCV"></canvas>
+      </div>
+      <div id="imageControlOriginal">
+        <button onclick="copy2original()">設為原圖</button>
+        <button onclick="importOriginal()">匯入原圖</button>
+      </div>
+      <div id="imageControlMask">
+        <button onclick="copy2mask()">設為遮罩</button>
+        <button onclick="importMask()">匯入遮罩</button>
+      </div>
+      <button onclick="fillCanvas('white')">填滿白色</button>
+      <button onclick="fillCanvas('black')">填滿黑色</button>
+      <button onclick="setPenColor('black')">黑筆</button>
+      <button onclick="setPenColor('white')">白筆</button>
+      <div>
+        <label for="brushSizeRange"
+               style="color: var(--text-color);">筆刷大小:</label>
+        <input type="range"
+               id="brushSizeRange"
+               oninput="updateBrushSize(this.value)"
+               min="1" max="50" value="5" step="1" >
+        <div class="brush-preview" id="brushPreview"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script> //點擊放大顯示三個小canvas
+    document.addEventListener('DOMContentLoaded', function() {
+      const canvases = document.querySelectorAll('.tap2show');
+      const miniCanvasesContainer = document.querySelector('.mini-canvases');
+      let fullscreenContainer = null;
+      let activeCanvas = null;
+      canvases.forEach(canvas => {
+        canvas.addEventListener('click', function() {
+          activeCanvas = this;
+          showFullscreenCanvas(this);
+        });
+      });
+      function showFullscreenCanvas(canvas) {
+        if (!fullscreenContainer) {
+          fullscreenContainer = document.createElement('div');
+          fullscreenContainer.classList.add('fullscreen-canvas-container');
+          document.body.appendChild(fullscreenContainer);
+          // 點擊背景關閉放大顯示
+          fullscreenContainer.addEventListener('click', function(event) {
+            if (event.target === fullscreenContainer)
+            {hideFullscreenCanvas();}
+          });
+        }
+        // 清空之前的內容
+        fullscreenContainer.innerHTML = '';
+        // 複製 canvas 元素並添加到全螢幕容器中
+        const fullscreenCanvas = document.createElement('canvas');
+        fullscreenCanvas.classList.add('fullscreen-canvas');
+        fullscreenCanvas.width=canvas.width;
+        fullscreenCanvas.height=canvas.width;
+        fullscreenContainer.appendChild(fullscreenCanvas);
+          
+          const targetCtx = fullscreenCanvas.getContext('2d');
+          const sw = canvas.offsetWidth;
+          const sh = canvas.offsetWidth;
+          const dw = fullscreenCanvas.offsetWidth;
+          const dh = fullscreenCanvas.offsetHeight;
+          targetCtx.drawImage(canvas, 0, 0)//, sw, sh, 0, 0, dw, dh);
+          
+        // 顯示全螢幕容器
+        fullscreenContainer.classList.add('active');
+        // 禁用原始容器的點擊事件，避免重複觸發
+        if (miniCanvasesContainer)
+        {miniCanvasesContainer.style.pointerEvents = 'none';}
+      }
+      function hideFullscreenCanvas() {
+        if (fullscreenContainer) {
+          fullscreenContainer.classList.remove('active');
+          fullscreenContainer.innerHTML = ''; // 清空內容
+          // 重新啟用原始容器的點擊事件
+          if (miniCanvasesContainer) {
+            miniCanvasesContainer.style.pointerEvents = 'auto';
+          }
+          activeCanvas = null;
+        }
+      }
+    });
+  </script>
+  <script> //UI事件
+    
+    
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let penColor = 'white';
+    let brushSize = 5;
+    
+    fillCanvas('black');
+
+    window.addEventListener('load', () => {updateBrushPreview();});
+
+    function fillCanvas(color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function setPenColor(color) {
+      penColor = color;
+      updateBrushPreview();
+    }
+
+    function updateBrushSize(size) {
+      brushSize = size;
+      updateBrushPreview();
+    }
+
+    function updateBrushPreview() {
+      const preview = document.getElementById('brushPreview');
+      let Zoom=2*canvas.offsetWidth/canvas.width;
+      preview.style.width = `${brushSize * Zoom}px`;
+      preview.style.height = `${brushSize * Zoom}px`;
+      preview.style.backgroundColor = penColor;
+    }
+
+    function draw(x, y) {
+      let Zoom=canvas.width/canvas.offsetWidth;
+      ctx.beginPath();
+      ctx.arc(x*Zoom,y*Zoom, brushSize, 0, Math.PI * 2);
+      ctx.fillStyle = penColor;
+      ctx.fill();
+    }
+
+    // Desktop
+    canvas.addEventListener('mousedown', (e) => {
+      drawing = true;
+      draw(e.offsetX, e.offsetY);
+    });
+
+    canvas.addEventListener('mousemove', (e) =>
+    {if (drawing) draw(e.offsetX, e.offsetY);});
+
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseleave', () => drawing = false);
+
+    // Mobile
+    canvas.addEventListener('touchstart', (e) => {
+      drawing = true;
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      draw(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!drawing) return;
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      draw(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    canvas.addEventListener('touchend', () => drawing = false);
+    
+    function copyCanvasContent(sourceCanvas, targetCanvas) {
+      const targetCtx = targetCanvas.getContext('2d');
+      const sw = sourceCanvas.width;
+      const sh = sourceCanvas.height;
+      const dw = targetCanvas.width;
+      const dh = targetCanvas.height;
+      targetCtx.drawImage(sourceCanvas, 0, 0, sw, sh, 0, 0, dw, dh);
+    }
+    
+    function copy2original(){
+      let target=document.getElementById('originalCV');
+      copyCanvasContent(canvas,target);
+      computeFFT();
+    }
+    function copy2mask(){
+      let target=document.getElementById('maskCV');
+      copyCanvasContent(canvas,target);
+      computeFFT();
+    }
+    
+    function importOriginal() {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+
+      fileInput.onchange = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const originalCanvas = document.getElementById('originalCV');
+            if (originalCanvas && originalCanvas.getContext) {
+              const ctx = originalCanvas.getContext('2d');
+              const img = new Image();
+              img.onload = function() {
+                // 繪製圖片到 Canvas，您可以根據需要調整圖片在 Canvas 中的位置和大小
+                ctx.drawImage(img, 0, 0, originalCanvas.width, originalCanvas.height);
+                computeFFT(); // 在成功繪製圖片後呼叫 computeFFT()
+              };
+              img.src = e.target.result;
+            } else {
+              console.error('找不到 ID 為 originalCV 的 Canvas 元素或其 context。');
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      fileInput.click();
+    }
+
+    function importMask() {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+
+      fileInput.onchange = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const maskCanvas = document.getElementById('maskCV');
+            if (maskCanvas && maskCanvas.getContext) {
+              const ctx = maskCanvas.getContext('2d');
+              const img = new Image();
+              img.onload = function() {
+                // 繪製圖片到 Canvas，您可以根據需要調整圖片在 Canvas 中的位置和大小
+                ctx.drawImage(img, 0, 0, maskCanvas.width, maskCanvas.height);
+                computeFFT(); // 在成功繪製圖片後呼叫 computeFFT()
+              };
+              img.src = e.target.result;
+            } else {
+              console.error('找不到 ID 為 maskCV 的 Canvas 元素或其 context。');
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      fileInput.click();
+    }
+  </script>
+  <script> //計算FFT
+    function shiftIndex(idx, size = canvas.width) {
+      const half = size / 2;
+      let row = Math.floor(idx / size);
+      let col = idx % size;
+      let newRow = row, newCol = col;
+      // Determine which quadrant (1~4) this cell belongs to
+      const inTop = row < half;
+      const inLeft = col < half;
+      if ((inTop && inLeft) || (!inTop && !inLeft)) {
+        // Quadrant 1 or 4 — flip along "/"
+        let localRow = row % half;
+        let localCol = col % half;
+        newRow = half * (inTop ? 0 : 1) + (half - 1 - localCol);
+        newCol = half * (inLeft ? 0 : 1) + (half - 1 - localRow);
+      } else {
+        // Quadrant 2 or 3 — flip along "\"
+        let localRow = row % half;
+        let localCol = col % half;
+        newRow = half * (inTop ? 0 : 1) + localCol;
+        newCol = half * (inLeft ? 0 : 1) + localRow;
+      }
+      return newRow * size + newCol;
+    }
+    
+    function putImgInto(imgList,canvas){
+      const ctx = canvas.getContext("2d");
+      const imageData = ctx.createImageData(canvas.width, canvas.height);
+      for (let i = 0; i < imgList.length; i++) {
+        imageData.data[i * 4 + 0] = imgList[i];
+        imageData.data[i * 4 + 1] = imgList[i];
+        imageData.data[i * 4 + 2] = imgList[i];
+        imageData.data[i * 4 + 3] = 255;
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+    
+    function computeFFT(){
+      const originalCV = document.getElementById("originalCV");                 //  set up
+      const originalCTX = originalCV.getContext("2d");                          //  set up
+      const fftCV = document.getElementById("fftCV");                           //  set up
+      const fftCTX = fftCV.getContext("2d");                                    //  set up
+      const maskCV = document.getElementById("maskCV");                         //  set up
+      const maskCTX = maskCV.getContext("2d");                                  //  set up
+      const resultCV = document.getElementById("resultCV");                     //  set up
+      const resultCTX = resultCV.getContext("2d");                              //  set up
+      let originalData=originalCTX.getImageData(0, 0, originalCV.width,         //  set up
+                                                originalCV.height).data;        //  set up
+      let maskData=maskCTX.getImageData(0, 0, maskCV.width, maskCV.height).data;//  set up
+//--------------------------------------------------------------------------------------------------
+      let originalDataInGray = [];                                              //  FFT
+      for(let i=0;i<(originalData.length/4);i++){ //計算灰度                    //  FFT
+        let gray=0;                                                             //  FFT
+        gray+=originalData[i*4+0]*0.299;                                        //  FFT
+        gray+=originalData[i*4+1]*0.587;                                        //  FFT
+        gray+=originalData[i*4+2]*0.114;                                        //  FFT
+        originalDataInGray.push(Math.floor(gray));                              //  FFT
+      }                                                                         //  FFT
+      let FFTdata=[];                                                           //  FFT
+      Fourier.transform(originalDataInGray, FFTdata);                           //  FFT
+      let maxMagnitude = 0;                                                     //  FFT
+      for (let i = 0; i< FFTdata.length; i++){                                  //  FFT
+        let mag = FFTdata[i].magnitude();                                       //  FFT
+        if (mag > maxMagnitude)                                                 //  FFT
+        {maxMagnitude = mag;}                                                   //  FFT
+      }let cc=9e-3;                                                             //  FFT
+      let logOfMaxMag = Math.log(cc*maxMagnitude+1);                            //  FFT
+      let dataThatPutIntoFFTcv=new Array(canvas.width * canvas.width);          //  FFT
+      for(let i=0;i<FFTdata.length;i++){                                        //  FFT
+        let color = Math.log(cc*FFTdata[i].magnitude()+1);                      //  FFT
+        color = Math.round(255*(color/logOfMaxMag));                            //  FFT
+        dataThatPutIntoFFTcv[shiftIndex(i)]=color;                              //  FFT
+      }                                                                         //  FFT
+      putImgInto(dataThatPutIntoFFTcv,fftCV);                                   //  FFT
+//--------------------------------------------------------------------------------------------------
+      let maskDataInGray = [];                                                  //  IFFT
+      for(let i=0;i<(maskData.length/4);i++){ //計算灰度                        //  IFFT
+        let gray=0;                                                             //  IFFT
+        gray+=maskData[i*4+0]*0.299;                                            //  IFFT
+        gray+=maskData[i*4+1]*0.587;                                            //  IFFT
+        gray+=maskData[i*4+2]*0.114;                                            //  IFFT
+        maskDataInGray.push(Math.floor(gray));                                  //  IFFT
+      }                                                                         //  IFFT
+      for(let i=0;i<FFTdata.length;i++){                                        //  IFFT
+        let thisData=FFTdata[i];                                                //  IFFT
+        let timeData=maskDataInGray[shiftIndex(i)]/255;                         //  IFFT
+        FFTdata[i]=thisData.times(timeData);                                    //  IFFT
+      }                                                                         //  IFFT
+      let ifftWithMask=[];                                                      //  IFFT
+      Fourier.invert(FFTdata, ifftWithMask);                                    //  IFFT
+      putImgInto(ifftWithMask,resultCV);                                        //  IFFT
+    }                                                                           //  IFFT
+  </script>
+</body>
+</html>
