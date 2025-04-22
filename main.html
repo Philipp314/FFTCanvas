@@ -548,7 +548,7 @@
       }
       for(let i=0;i<FFTdata.length;i++){
         let thisData=FFTdata[i];
-        let timeData=maskDataInGray[shiftIndex(i)]/255*(doubleMode*2);
+        let timeData=maskDataInGray[shiftIndex(i)]/255*(doubleMode+1);
         FFTdata[i]=thisData.times(timeData);
       }
       let ifftWithMask=[];
