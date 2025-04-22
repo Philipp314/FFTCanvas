@@ -6,7 +6,6 @@
   <title id="title">Fourier Drawing App</title>
   <style>
     :root {
-      /* 顏色變數 */
       --bg-color: #0d1b2a;
       --panel-color: #1b263b;
       --accent-color: #00b4d8;
@@ -15,7 +14,6 @@
       --btn-hover: #00b4d8;
     }
 
-    /* 基礎 body 樣式 */
     body {
       margin: 0;
       background-color: var(--bg-color);
@@ -28,7 +26,6 @@
       padding: 1rem;
     }
 
-    /* 主容器樣式 */
     .container {
       display: flex;
       flex-direction: row;
@@ -39,7 +36,6 @@
       justify-content: center;
     }
 
-    /* 主畫布容器樣式 */
     .main-canvas-container {
       flex: 1 1 auto;
       max-width: min(90vw, 90vh);
@@ -54,17 +50,15 @@
       touch-action: none;
     }
 
-    /* 側邊欄樣式 */
     .sidebar {
       display: flex;
       flex-direction: column;
       gap: 1rem;
       max-width: 300px;
       flex: 1 1 auto;
-      overflow: hidden;
+      overflow:hidden;
     }
 
-    /* 迷你畫布容器樣式 */
     .mini-canvases {
       display: flex;
       flex-direction: row;
@@ -79,7 +73,6 @@
       background-color: #000;
     }
 
-    /* 按鈕樣式 */
     button {
       background-color: var(--btn-color);
       color: white;
@@ -95,7 +88,12 @@
       background-color: var(--btn-hover);
     }
 
-    /* 筆刷預覽樣式 */
+    button.Press {
+      background-color: var(--btn-hover);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+      transform: translateY(2px);
+    }
+
     .brush-preview {
       width: 40px;
       height: 40px;
@@ -104,7 +102,6 @@
       align-self: center;
     }
 
-    /* 滑桿樣式 */
     input[type="range"] {
       width: 100%;
       margin: 0.5rem 0;
@@ -114,30 +111,28 @@
       cursor: pointer;
     }
 
-    /* 響應式佈局 (橫向模式) */
     @media (orientation: landscape) {
       .sidebar {
         height: 100%;
-        max-height: min(90vw, 90vh);
+        max-height: min(90vw, 90vh); /* 跟主畫布一樣高 */
         overflow-y: auto;
       }
     }
-
-    /* 全螢幕畫布容器樣式 */
+    
     .fullscreen-canvas-container {
-      position: fixed;
+      position: fixed; /* 確保容器位於最上層 */
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.5); /* 可選的背景遮罩 */
       display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
+      justify-content: center; /* 水平居中 */
+      align-items: center; /* 垂直居中 */
+      z-index: 1000; /* 確保在其他元素之上 */
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+      transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s; /* 平滑過渡效果 */
     }
 
     .fullscreen-canvas-container.active {
@@ -149,49 +144,64 @@
     .fullscreen-canvas {
       width: min(90vw, 90vh);
       height: min(90vw, 90vh);
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* 可選的陰影效果 */
       background-color: black;
     }
 
-    /* 圖片控制容器樣式 */
-    #imageControlOriginal,
-    #imageControlMask {
+    .towButtonInOneLine {
       display: flex;
       gap: 5px;
       justify-content: space-between;
     }
 
-    #imageControlOriginal button,
-    #imageControlMask button {
-      width: calc(50% - 5px);
+    .towButtonInOneLine button
+    {width:calc(50% - 5px);}
+
+    .threeButtonInOneLine {
+      display: flex;
+      gap: 5px;
+      justify-content: space-between;
     }
+
+    .threeButtonInOneLine button
+    {width:calc(33.33% - 5px);}
   </style>
-  <script src="https://turbomaze.github.io/JS-Fourier-Image-Analysis/js/fourier.js"></script>
+  <script src="http://turbomaze.github.io/JS-Fourier-Image-Analysis/js/fourier.js"></script>
 </head>
 <body>
   <div class="container">
     <div class="main-canvas-container">
-      <canvas width=512 height=512 id="mainCanvas"></canvas>
+      <canvas width=256 height=256 id="mainCanvas"></canvas>
     </div>
     <div class="sidebar">
       <div class="mini-canvases">
-        <canvas width=512 height=512 class="tap2show" id="originalCV"></canvas>
-        <canvas width=512 height=512 class="tap2show" id="fftCV"></canvas>
-        <canvas width=512 height=512 class="tap2show" id="maskCV"></canvas>
-        <canvas width=512 height=512 class="tap2show" id="resultCV"></canvas>
+        <canvas width=256 height=256 class="tap2show" id="originalCV"></canvas>
+        <canvas width=256 height=256 class="tap2show" id="fftCV"></canvas>
+        <canvas width=256 height=256 class="tap2show" id="maskCV"></canvas>
+        <canvas width=256 height=256 class="tap2show" id="resultCV"></canvas>
       </div>
-      <div id="imageControlOriginal">
+      <div class="towButtonInOneLine">
         <button onclick="copy2original()">設為原圖</button>
         <button onclick="importOriginal()">匯入原圖</button>
       </div>
-      <div id="imageControlMask">
+      <div class="towButtonInOneLine">
         <button onclick="copy2mask()">設為遮罩</button>
         <button onclick="importMask()">匯入遮罩</button>
       </div>
-      <button onclick="fillCanvas('white')">填滿白色</button>
-      <button onclick="fillCanvas('black')">填滿黑色</button>
+      <div class="towButtonInOneLine">
+        <button id="showFFTinCanvas" onclick="showFFTinCanvas()">頻域預覽</button>
+        <button id="doubleModeSwitch" onclick="doubleModeSwitch()">增強模式</button>
+      </div>
+      <div class="threeButtonInOneLine">
+      <button onclick="fillCanvas('white')">填白色</button>
+      <button onclick="fillCanvas('#888')">填灰色</button>
+      <button onclick="fillCanvas('black')">填黑色</button>
+      </div>
+      <div class="threeButtonInOneLine">
       <button onclick="setPenColor('black')">黑筆</button>
+      <button onclick="setPenColor('#888')">灰筆</button>
       <button onclick="setPenColor('white')">白筆</button>
+      </div>
       <div>
         <label for="brushSizeRange"
                style="color: var(--text-color);">筆刷大小:</label>
@@ -270,10 +280,11 @@
     let drawing = false;
     let penColor = 'white';
     let brushSize = 5;
-    
-    fillCanvas('black');
 
-    window.addEventListener('load', () => {updateBrushPreview();});
+    window.addEventListener('load', () => {
+      fillCanvas('black');
+      updateBrushPreview();
+    });
 
     function fillCanvas(color) {
       ctx.fillStyle = color;
@@ -417,8 +428,42 @@
 
       fileInput.click();
     }
+    
+    function setCanvasAsDivBackground(canvasObj, divObj) {
+      const dataURL = canvasObj.toDataURL(); // 將 canvas 轉成 base64 圖片
+      divObj.style.backgroundImage = `url(${dataURL})`;
+      divObj.style.backgroundSize = "cover"; // 可視情況調整
+      divObj.style.backgroundPosition="top center"; /* 靠上對齊，水平置中 */
+    }
+    
+    function showFFTinCanvas(){
+      const btn = document.getElementById("showFFTinCanvas");
+      const divObj = document.querySelector(".main-canvas-container");
+      const canvasObj = document.querySelector("#fftCV");
+      if(btn.className=="Press"){
+        btn.className="";
+        document.querySelector("#mainCanvas").style.backgroundColor="#00000000";
+        document.querySelector("#mainCanvas").style.opacity=1;
+      }else{
+        btn.className="Press";
+        setCanvasAsDivBackground(canvasObj,divObj);
+        document.querySelector("#mainCanvas").style.opacity=0.5;
+      }
+    }
+    function doubleModeSwitch(){
+      const btn = document.getElementById("doubleModeSwitch");
+      if(btn.className=="Press"){
+        btn.className="";
+        doubleMode=false;
+      }else{
+        btn.className="Press";
+        doubleMode=true;
+      }
+    }
   </script>
   <script> //計算FFT
+    let doubleMode=false;
+    
     function shiftIndex(idx, size = canvas.width) {
       const half = size / 2;
       let row = Math.floor(idx / size);
@@ -503,7 +548,7 @@
       }                                                                         //  IFFT
       for(let i=0;i<FFTdata.length;i++){                                        //  IFFT
         let thisData=FFTdata[i];                                                //  IFFT
-        let timeData=maskDataInGray[shiftIndex(i)]/255;                         //  IFFT
+        let timeData=maskDataInGray[shiftIndex(i)]/255*(doubleMode*2);          //  IFFT
         FFTdata[i]=thisData.times(timeData);                                    //  IFFT
       }                                                                         //  IFFT
       let ifftWithMask=[];                                                      //  IFFT
