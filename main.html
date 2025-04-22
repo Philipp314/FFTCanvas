@@ -118,7 +118,7 @@
         overflow-y: auto;
       }
     }
-    
+
     .fullscreen-canvas-container {
       position: fixed; /* 確保容器位於最上層 */
       top: 0;
@@ -166,7 +166,7 @@
     .threeButtonInOneLine button
     {width:calc(33.33% - 5px);}
   </style>
-  <script src="http://turbomaze.github.io/JS-Fourier-Image-Analysis/js/fourier.js"></script>
+  <script src="https://turbomaze.github.io/JS-Fourier-Image-Analysis/js/fourier.js"></script>
 </head>
 <body>
   <div class="container">
@@ -213,7 +213,7 @@
       </div>
     </div>
   </div>
-  
+
   <script> //點擊放大顯示三個小canvas
     document.addEventListener('DOMContentLoaded', function() {
       const canvases = document.querySelectorAll('.tap2show');
@@ -245,14 +245,14 @@
         fullscreenCanvas.width=canvas.width;
         fullscreenCanvas.height=canvas.width;
         fullscreenContainer.appendChild(fullscreenCanvas);
-          
+
           const targetCtx = fullscreenCanvas.getContext('2d');
           const sw = canvas.offsetWidth;
           const sh = canvas.offsetWidth;
           const dw = fullscreenCanvas.offsetWidth;
           const dh = fullscreenCanvas.offsetHeight;
           targetCtx.drawImage(canvas, 0, 0)//, sw, sh, 0, 0, dw, dh);
-          
+
         // 顯示全螢幕容器
         fullscreenContainer.classList.add('active');
         // 禁用原始容器的點擊事件，避免重複觸發
@@ -273,8 +273,8 @@
     });
   </script>
   <script> //UI事件
-    
-    
+
+
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
     let drawing = false;
@@ -346,7 +346,7 @@
     });
 
     canvas.addEventListener('touchend', () => drawing = false);
-    
+
     function copyCanvasContent(sourceCanvas, targetCanvas) {
       const targetCtx = targetCanvas.getContext('2d');
       const sw = sourceCanvas.width;
@@ -355,7 +355,7 @@
       const dh = targetCanvas.height;
       targetCtx.drawImage(sourceCanvas, 0, 0, sw, sh, 0, 0, dw, dh);
     }
-    
+
     function copy2original(){
       let target=document.getElementById('originalCV');
       copyCanvasContent(canvas,target);
@@ -366,7 +366,7 @@
       copyCanvasContent(canvas,target);
       computeFFT();
     }
-    
+
     function importOriginal() {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
@@ -428,14 +428,14 @@
 
       fileInput.click();
     }
-    
+
     function setCanvasAsDivBackground(canvasObj, divObj) {
       const dataURL = canvasObj.toDataURL(); // 將 canvas 轉成 base64 圖片
       divObj.style.backgroundImage = `url(${dataURL})`;
       divObj.style.backgroundSize = "cover"; // 可視情況調整
       divObj.style.backgroundPosition="top center"; /* 靠上對齊，水平置中 */
     }
-    
+
     function showFFTinCanvas(){
       const btn = document.getElementById("showFFTinCanvas");
       const divObj = document.querySelector(".main-canvas-container");
@@ -463,7 +463,7 @@
   </script>
   <script> //計算FFT
     let doubleMode=false;
-    
+
     function shiftIndex(idx, size = canvas.width) {
       const half = size / 2;
       let row = Math.floor(idx / size);
@@ -487,7 +487,7 @@
       }
       return newRow * size + newCol;
     }
-    
+
     function putImgInto(imgList,canvas){
       const ctx = canvas.getContext("2d");
       const imageData = ctx.createImageData(canvas.width, canvas.height);
@@ -499,62 +499,62 @@
       }
       ctx.putImageData(imageData, 0, 0);
     }
-    
+
     function computeFFT(){
-      const originalCV = document.getElementById("originalCV");                 //  set up
-      const originalCTX = originalCV.getContext("2d");                          //  set up
-      const fftCV = document.getElementById("fftCV");                           //  set up
-      const fftCTX = fftCV.getContext("2d");                                    //  set up
-      const maskCV = document.getElementById("maskCV");                         //  set up
-      const maskCTX = maskCV.getContext("2d");                                  //  set up
-      const resultCV = document.getElementById("resultCV");                     //  set up
-      const resultCTX = resultCV.getContext("2d");                              //  set up
-      let originalData=originalCTX.getImageData(0, 0, originalCV.width,         //  set up
-                                                originalCV.height).data;        //  set up
-      let maskData=maskCTX.getImageData(0, 0, maskCV.width, maskCV.height).data;//  set up
-//--------------------------------------------------------------------------------------------------
-      let originalDataInGray = [];                                              //  FFT
-      for(let i=0;i<(originalData.length/4);i++){ //計算灰度                    //  FFT
-        let gray=0;                                                             //  FFT
-        gray+=originalData[i*4+0]*0.299;                                        //  FFT
-        gray+=originalData[i*4+1]*0.587;                                        //  FFT
-        gray+=originalData[i*4+2]*0.114;                                        //  FFT
-        originalDataInGray.push(Math.floor(gray));                              //  FFT
-      }                                                                         //  FFT
-      let FFTdata=[];                                                           //  FFT
-      Fourier.transform(originalDataInGray, FFTdata);                           //  FFT
-      let maxMagnitude = 0;                                                     //  FFT
-      for (let i = 0; i< FFTdata.length; i++){                                  //  FFT
-        let mag = FFTdata[i].magnitude();                                       //  FFT
-        if (mag > maxMagnitude)                                                 //  FFT
-        {maxMagnitude = mag;}                                                   //  FFT
-      }let cc=9e-3;                                                             //  FFT
-      let logOfMaxMag = Math.log(cc*maxMagnitude+1);                            //  FFT
-      let dataThatPutIntoFFTcv=new Array(canvas.width * canvas.width);          //  FFT
-      for(let i=0;i<FFTdata.length;i++){                                        //  FFT
-        let color = Math.log(cc*FFTdata[i].magnitude()+1);                      //  FFT
-        color = Math.round(255*(color/logOfMaxMag));                            //  FFT
-        dataThatPutIntoFFTcv[shiftIndex(i)]=color;                              //  FFT
-      }                                                                         //  FFT
-      putImgInto(dataThatPutIntoFFTcv,fftCV);                                   //  FFT
-//--------------------------------------------------------------------------------------------------
-      let maskDataInGray = [];                                                  //  IFFT
-      for(let i=0;i<(maskData.length/4);i++){ //計算灰度                        //  IFFT
-        let gray=0;                                                             //  IFFT
-        gray+=maskData[i*4+0]*0.299;                                            //  IFFT
-        gray+=maskData[i*4+1]*0.587;                                            //  IFFT
-        gray+=maskData[i*4+2]*0.114;                                            //  IFFT
-        maskDataInGray.push(Math.floor(gray));                                  //  IFFT
-      }                                                                         //  IFFT
-      for(let i=0;i<FFTdata.length;i++){                                        //  IFFT
-        let thisData=FFTdata[i];                                                //  IFFT
-        let timeData=maskDataInGray[shiftIndex(i)]/255*(doubleMode*2);          //  IFFT
-        FFTdata[i]=thisData.times(timeData);                                    //  IFFT
-      }                                                                         //  IFFT
-      let ifftWithMask=[];                                                      //  IFFT
-      Fourier.invert(FFTdata, ifftWithMask);                                    //  IFFT
-      putImgInto(ifftWithMask,resultCV);                                        //  IFFT
-    }                                                                           //  IFFT
+      const originalCV = document.getElementById("originalCV");
+      const originalCTX = originalCV.getContext("2d");
+      const fftCV = document.getElementById("fftCV");
+      const fftCTX = fftCV.getContext("2d");
+      const maskCV = document.getElementById("maskCV");
+      const maskCTX = maskCV.getContext("2d");
+      const resultCV = document.getElementById("resultCV");
+      const resultCTX = resultCV.getContext("2d");
+      let originalData=originalCTX.getImageData(0, 0, originalCV.width,
+                                                originalCV.height).data;
+      let maskData=maskCTX.getImageData(0, 0, maskCV.width, maskCV.height).data;
+//------------------------------------------------------------------------------
+      let originalDataInGray = [];
+      for(let i=0;i<(originalData.length/4);i++){ //計算灰度
+        let gray=0;
+        gray+=originalData[i*4+0]*0.299;
+        gray+=originalData[i*4+1]*0.587;
+        gray+=originalData[i*4+2]*0.114;
+        originalDataInGray.push(Math.floor(gray));
+      }
+      let FFTdata=[];
+      Fourier.transform(originalDataInGray, FFTdata);
+      let maxMagnitude = 0;
+      for (let i = 0; i< FFTdata.length; i++){
+        let mag = FFTdata[i].magnitude();
+        if (mag > maxMagnitude)
+        {maxMagnitude = mag;}
+      }let cc=9e-3;
+      let logOfMaxMag = Math.log(cc*maxMagnitude+1);
+      let dataThatPutIntoFFTcv=new Array(canvas.width * canvas.width);
+      for(let i=0;i<FFTdata.length;i++){
+        let color = Math.log(cc*FFTdata[i].magnitude()+1);
+        color = Math.round(255*(color/logOfMaxMag));
+        dataThatPutIntoFFTcv[shiftIndex(i)]=color;
+      }
+      putImgInto(dataThatPutIntoFFTcv,fftCV);
+//------------------------------------------------------------------------------
+      let maskDataInGray = [];
+      for(let i=0;i<(maskData.length/4);i++){ //計算灰度
+        let gray=0;
+        gray+=maskData[i*4+0]*0.299;
+        gray+=maskData[i*4+1]*0.587;
+        gray+=maskData[i*4+2]*0.114;
+        maskDataInGray.push(Math.floor(gray));
+      }
+      for(let i=0;i<FFTdata.length;i++){
+        let thisData=FFTdata[i];
+        let timeData=maskDataInGray[shiftIndex(i)]/255*(doubleMode*2);
+        FFTdata[i]=thisData.times(timeData);
+      }
+      let ifftWithMask=[];
+      Fourier.invert(FFTdata, ifftWithMask);
+      putImgInto(ifftWithMask,resultCV);
+    }
   </script>
 </body>
 </html>
